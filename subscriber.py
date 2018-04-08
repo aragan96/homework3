@@ -44,3 +44,7 @@ class Subscriber:
         elif msg["sender_id"] == self.sId:
             # this is a historical message meant for me
             print("%s HISTORY: %s" % (topic, msg["contents"]))
+
+sub = Subscriber()
+sub.register("topic1")
+sub.notify()

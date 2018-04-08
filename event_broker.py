@@ -107,9 +107,9 @@ class EventBroker:
         broker_sub_socket = self.context.socket(zmq.SUB)
         broker_sub_socket.connect("tcp://127.0.0.1:5557")
         broker_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "registerpub".decode("ascii"))
-        #broker_sub_socket.RCVTIMEO = 5
+        broker_sub_socket.RCVTIMEO = 3000
         while not self.is_leader:
-            for i in range(1):
+            try:
                 received_string = broker_sub_socket.recv()
                 print "Received:", received_string
                 register_code, mjson = received_string.split()
@@ -131,7 +131,9 @@ class EventBroker:
                     is_heartbeat = msg["heartbeat"]
                     if topic in self.topic_map:
                         self.topic_map[topic].receive_message(sender_id, message_contents, is_heartbeat)
-            print "No messages for a while"
+            except zmq.error.Again:
+                if not self.is_leader:
+                    print "No messages received for 3 seconds"
 
         broker_sub_socket.close()
 
