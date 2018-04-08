@@ -1,5 +1,7 @@
 # homework3
 
+NOTE: A Zookeeper server must be running for this assignment to work.
+
 Benchmarks when run on Ubuntu virtual machine:
 Average time to send/receive one message with:
 
