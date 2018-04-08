@@ -8,13 +8,13 @@ import uuid
 
 class Publisher:
 
-    def __init__(self):
+    def __init__(self, ip):
         self.context = zmq.Context()
         self.pub_socket = self.context.socket(zmq.PUB)
         self.pub_socket.connect("tcp://127.0.0.1:5555")
 
         # set a random ID for self
-        self.pId = uuid.uuid4()
+        self.pId = ip
 
         self.started_heartbeat = False
         self.topics = set()
@@ -22,8 +22,8 @@ class Publisher:
         time.sleep(3)
         
     def register(self, topic, ownership_strength=0, history=0):
-        msg = {"topic": topic,
-               "pId": self.pId,
+        msg = {"pId": self.pId,
+               "topic": topic,
                "ownership_strength": ownership_strength,
                "history": history}
         formatted_message = json.dumps(msg, separators=(",", ":"))
@@ -57,3 +57,7 @@ class Publisher:
                "datetime": cur_date_time}
         self.pub_socket.send_string("%s %s" % (topic, json.dumps(msg, separators=(",", ":"))))
         print "publishing to topic", topic, "message:", val
+
+pub = Publisher("127.0.0.1")
+pub.register("topic1",2)
+pub.publish("topic1", "123")

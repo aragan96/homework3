@@ -83,7 +83,7 @@ class EventBroker:
         
         try:
             self.zk.create("/LEADER", b"0", ephemeral=True)
-            print "BECAME LEADER"
+            print "BECAME LEADER INITIALLY"
             self.is_leader = True
         except:
             @self.zk.DataWatch("/LEADER")
@@ -106,10 +106,10 @@ class EventBroker:
         # Receive messages and update state in background so that on failure can pick up where leader left off
         broker_sub_socket = self.context.socket(zmq.SUB)
         broker_sub_socket.connect("tcp://127.0.0.1:5557")
-        broker_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "registerpub")
-        broker_sub_socket.RCVTIMEO = 5
+        broker_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "registerpub".decode("ascii"))
+        #broker_sub_socket.RCVTIMEO = 5
         while not self.is_leader:
-            try:
+            for i in range(1):
                 received_string = broker_sub_socket.recv()
                 print "Received:", received_string
                 register_code, mjson = received_string.split()
@@ -125,15 +125,13 @@ class EventBroker:
                         self.topic_map[topic] = Topic(topic, sender_id, ownership_strength, history)
                         broker_sub_socket.setsockopt_string(zmq.SUBSCRIBE, topic.decode("ascii"))
                 else:
-                    self.broker_pub_socket.send_string(received_string)
                     topic = register_code
                     sender_id = msg["pId"]
                     message_contents = msg["val"]
                     is_heartbeat = msg["heartbeat"]
                     if topic in self.topic_map:
                         self.topic_map[topic].receive_message(sender_id, message_contents, is_heartbeat)
-            except:
-                print "No messages for a while"
+            print "No messages for a while"
 
         broker_sub_socket.close()
 
