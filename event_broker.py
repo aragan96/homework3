@@ -1,4 +1,5 @@
 import zmq
+import logging
 import time
 import threading
 import json
@@ -70,27 +71,34 @@ class Topic:
 class EventBroker:
 
     def __init__(self):
+        logging.basicConfig()
+        self.is_leader = False
         self.zk = KazooClient(hosts='127.0.0.1:2181')
         self.zk.start()
         print "zookeeper started with state", self.zk.state
-        if self.zk.create("/LEADER", 0, ephemeral=True):
+        try:
+            self.zk.create("/LEADER", b"0", ephemeral=True)
             print "BECAME LEADER"
-            self.start()
-        else:
-            print "FAILED TO BECOME LEADER"
+            self.is_leader = True
+        except:
             @self.zk.DataWatch("/LEADER")
             def watch_func(data, stat):
                 if data is not None:
-                    print "FAILED TO BECOME LEADER"
                     return True
                 # If data is none, might be able to get node
-                if self.zk.create("/LEADER", 0, ephemeral=True):
+                try:
+                    self.zk.create("/LEADER", b"0", ephemeral=True)
                     print "BECAME LEADER"
-                    self.start()
+                    self.is_leader = True
                     return False
-                else:
-                    print "UNEXPECTED - FAILED TO BECOME LEADER THOUGH"
+                except:
+                    print "FAILED TO BECOME LEADER, OTHER NODE BEAT THIS ONE"
                     return True
+        while not self.is_leader:
+            print "Waiting to become leader"
+            time.sleep(3)
+
+        self.start()
 
     def publish_to_subscribers(self, topic, message_contents, sent_date_time, sender_id=None):
         # Send messages to subscribers
