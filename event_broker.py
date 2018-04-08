@@ -72,18 +72,24 @@ class EventBroker:
     def __init__(self):
         self.zk = KazooClient(hosts='127.0.0.1:2181')
         self.zk.start()
+        print "zookeeper started with state", self.zk.state
         if self.zk.create("/LEADER", 0, ephemeral=True):
+            print "BECAME LEADER"
             self.start()
         else:
+            print "FAILED TO BECOME LEADER"
             @self.zk.DataWatch("/LEADER")
             def watch_func(data, stat):
                 if data is not None:
+                    print "FAILED TO BECOME LEADER"
                     return True
                 # If data is none, might be able to get node
                 if self.zk.create("/LEADER", 0, ephemeral=True):
+                    print "BECAME LEADER"
                     self.start()
                     return False
                 else:
+                    print "UNEXPECTED - FAILED TO BECOME LEADER THOUGH"
                     return True
 
     def publish_to_subscribers(self, topic, message_contents, sent_date_time, sender_id=None):
@@ -153,3 +159,5 @@ class EventBroker:
                         self.publish_to_subscribers(topic, message_contents, sent_date_time)
                 else:
                     print("Publishing to unregistered topic")
+
+broker = EventBroker()
