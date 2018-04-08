@@ -71,11 +71,16 @@ class Topic:
 class EventBroker:
 
     def __init__(self):
+        self.context = zmq.Context()
         logging.basicConfig()
+        # maps topic strings to topic class
+        self.topic_map = {}
+
         self.is_leader = False
         self.zk = KazooClient(hosts='127.0.0.1:2181')
         self.zk.start()
         print "zookeeper started with state", self.zk.state
+        
         try:
             self.zk.create("/LEADER", b"0", ephemeral=True)
             print "BECAME LEADER"
@@ -94,9 +99,43 @@ class EventBroker:
                 except:
                     print "FAILED TO BECOME LEADER, OTHER NODE BEAT THIS ONE"
                     return True
+        if self.is_leader:
+            self.start()
+            return
+
+        # Receive messages and update state in background so that on failure can pick up where leader left off
+        broker_sub_socket = self.context.socket(zmq.SUB)
+        broker_sub_socket.connect("tcp://127.0.0.1:5557")
+        broker_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "registerpub")
+        broker_sub_socket.RCVTIMEO = 5
         while not self.is_leader:
-            print "Waiting to become leader"
-            time.sleep(3)
+            try:
+                received_string = broker_sub_socket.recv()
+                print "Received:", received_string
+                register_code, mjson = received_string.split()
+                msg = json.loads(mjson)
+                if register_code == "registerpub":
+                    topic = msg["topic"]
+                    sender_id = msg["pId"]
+                    history = msg["history"]
+                    ownership_strength = msg["ownership_strength"]
+                    if topic in self.topic_map:
+                        self.topic_map[topic].add_publisher(sender_id, ownership_strength, history)
+                    else:
+                        self.topic_map[topic] = Topic(topic, sender_id, ownership_strength, history)
+                        broker_sub_socket.setsockopt_string(zmq.SUBSCRIBE, topic.decode("ascii"))
+                else:
+                    self.broker_pub_socket.send_string(received_string)
+                    topic = register_code
+                    sender_id = msg["pId"]
+                    message_contents = msg["val"]
+                    is_heartbeat = msg["heartbeat"]
+                    if topic in self.topic_map:
+                        self.topic_map[topic].receive_message(sender_id, message_contents, is_heartbeat)
+            except:
+                print "No messages for a while"
+
+        broker_sub_socket.close()
 
         self.start()
 
@@ -106,33 +145,39 @@ class EventBroker:
                "sender_id": sender_id,
                "datetime": sent_date_time}
         self.xpub_socket.send_string("%s %s" % (topic, json.dumps(msg, separators=(",", ":"))))
+
         
     def start(self):
-        # Work on requests from both server and publisher
+        for topic in self.topic_map:
+            # Make sure we don't mark anyone as dead until they have a chance to publish
+            self.topic_map[topic].change_leader = False
+            if self.topic_map[topic].dead_leader:
+                self.topic_map[topic].dead_leader = False
+                self.topic_map[topic].start_timeout_routine()
 
-        self.context = zmq.Context()
-
-        # bind to publisher socket as XSUB
+        # bind to publisher socket as SUB
         self.xsub_socket = self.context.socket(zmq.SUB)
         self.xsub_socket.bind("tcp://127.0.0.1:5555")
 
-        # bind to subscriber socket as XPUB
+        # bind to subscriber socket as PUB
         self.xpub_socket = self.context.socket(zmq.PUB)
         self.xpub_socket.bind("tcp://127.0.0.1:5556")
 
-        # maps topic strings to topic class
-        self.topic_map = {}
+        self.broker_pub_socket = self.context.socket(zmq.PUB)
+        self.broker_pub_socket.bind("tcp://127.0.0.1:5557")
 
         self.xsub_socket.setsockopt_string(zmq.SUBSCRIBE, "registerpub".decode("ascii"))
         self.xsub_socket.setsockopt_string(zmq.SUBSCRIBE, "registersub".decode("ascii"))
         print "NEW LEADER"
         should_continue = True
         while should_continue:
-            string = self.xsub_socket.recv()
-            print "Received:", string
-            register_code, mjson = string.split()
+            received_string = self.xsub_socket.recv()
+            print "Received:", received_string
+            register_code, mjson = received_string.split()
             msg = json.loads(mjson)
             if register_code == "registerpub":
+                # Forward register message to all other brokers
+                self.broker_pub_socket.send_string(received_string)
                 # Register a publisher
                 topic = msg["topic"]
                 sender_id = msg["pId"]
@@ -157,6 +202,8 @@ class EventBroker:
                         history -= 1
                         i -= 1
             else:
+                # Forward register message to all other brokers
+                self.broker_pub_socket.send_string(received_string)
                 topic = register_code
                 sender_id = msg["pId"]
                 message_contents = msg["val"]
