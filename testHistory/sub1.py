@@ -12,9 +12,7 @@ if __name__ == '__main__':
 	else:
 		from ..subscriber import Subscriber
 
-	existing_broker_ip = sys.argv[1]
-
-	sub = Subscriber(existing_broker_ip)
+	sub = Subscriber()
 	sub.register("topic1", 2)
 	sub.register("topic2", 4)
 	while True:

@@ -57,7 +57,3 @@ class Publisher:
                "datetime": cur_date_time}
         self.pub_socket.send_string("%s %s" % (topic, json.dumps(msg, separators=(",", ":"))))
         print "publishing to topic", topic, "message:", val
-
-pub = Publisher("127.0.0.1")
-pub.register("topic1",2)
-pub.publish("topic1", "123")

@@ -18,11 +18,11 @@ Test name: testFiltering
 Test description: Tests whether the subscriber only receives updates on topics they subscribed to.
 To run:
 1) Start up 5 terminals in the test's folder and run clean_up.py in one of them.
-2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds
-3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
-4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
-5) In the fourth, run "python sub 127.0.0.1"
-6) In the fifth, run "python pub 127.0.0.4 127.0.0.1"
+2) In the first, run "python eb.py" and wait a few seconds
+3) In the second, run "python eb.py" and wait a few seconds
+4) In the third, run "python eb.py" and wait a few seconds
+5) In the fourth, run "python sub.py"
+6) In the fifth, run "python pub 127.0.0.1"
 
 Expected output (from sub):
 
@@ -38,12 +38,12 @@ Test name: testHistory
 Test description: Tests whether system accurately maintains history of publishers.
 To run:
 1) Start up 5 terminals in the test's folder and run clean_up.py in one of them.
-2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds
-3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
-4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
-5) In the fourth, run "python pub1 127.0.0.4 127.0.0.1"
+2) In the first, run "python eb.py" and wait a few seconds
+3) In the second, run "python eb.py" and wait a few seconds
+4) In the third, run "python eb.py" and wait a few seconds
+5) In the fourth, run "python pub1.py 127.0.0.1"
 6) Wait until the publisher finishes plus a few seconds to allow the event_broker to process
-7) In the fifth, run "python sub1 127.0.0.1"
+7) In the fifth, run "python sub1.py"
 
 Expected output (from sub1):
 
@@ -60,13 +60,13 @@ Test name: testOwnershipStrength
 Test description: Tests whether nodes with higher ownership strength are given priority and only their messages are received.
 To run:
 1) Start up 6 terminals in the test's folder and run clean_up.py in one of them.
-2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds
-3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
-4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
-5) In the fourth, run "python sub 127.0.0.1"
-6) In the fifth, run "python pub1 127.0.0.4 127.0.0.1". This starts up your 1st
+2) In the first, run "python eb.py" and wait a few seconds
+3) In the second, run "python eb.py" and wait a few seconds
+4) In the third, run "python eb.py" and wait a few seconds
+5) In the fourth, run "python sub.py"
+6) In the fifth, run "python pub1.py 127.0.0.1". This starts up your 1st
    publisher, which has weaker ownership strength.
-7) In the sixth, run "python pub2 127.0.0.5 127.0.0.1". This starts up your 2nd
+7) In the sixth, run "python pub2.py 127.0.0.2". This starts up your 2nd
    publisher, which has a stronger ownership strength.
 
 Expected output (from sub):
@@ -86,14 +86,14 @@ Test name: testFailingOwnership
 Test description: Tests whether nodes with lower priority take over if the leader dies.
 To run:
 1) Start up 6 terminals in the test's folder and run clean_up.py in one of them.
-2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds  
-3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
-4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
-5) In the fourth, run "python sub 127.0.0.1"
-6) In the fifth, run "python pub1 127.0.0.4 127.0.0.1". This starts up your 1st
-   publisher, which has weaker ownership strength.
-7) In the sixth, run "python pub2 127.0.0.5 127.0.0.1". This starts up your 2nd
-   publisher, which has a stronger ownership strength.
+2) In the first, run "python eb.py" and wait a few seconds  
+3) In the second, run "python eb.py" and wait a few seconds
+4) In the third, run "python eb.py" and wait a few seconds
+5) In the fourth, run "python sub.py"
+6) In the fifth, run "python pub1.py 127.0.0.1". This starts up your 1st
+   publisher, which has stronger ownership strength.
+7) In the sixth, run "python pub2.py 127.0.0.2". This starts up your 2nd
+   publisher, which has a weaker ownership strength.
 
 At this point, check the subscriber output. It should be saying  
 topic1: PUB1
@@ -116,17 +116,17 @@ Test name: testMany
 Test description: Tests whether the system works with many publishers and subscribers operating with multiple topics at once.
 To run:
 1) Start up 9 terminals in the test's folder and run clean_up.py in one of them.
-2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds
-3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
-4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
-5) In the fourth, run "python pub1 127.0.0.4 127.0.0.1" 
-6) In the fifth, run "python pub2 127.0.0.5 127.0.0.1".
-7) In the sixth, run "python pub3 127.0.0.6 127.0.0.1".
+2) In the first, run "python eb.py" and wait a few seconds
+3) In the second, run "python eb.py" and wait a few seconds
+4) In the third, run "python eb.py" and wait a few seconds
+5) In the fourth, run "python pub1.py 127.0.0.1" 
+6) In the fifth, run "python pub2.py 127.0.0.2".
+7) In the sixth, run "python pub3.py 127.0.0.3".
 8) Wait until the publishers register, plus a few seconds to allow the broker to process.
 9) To make your life a bit easier, you can minimize the previous 4 terminals. 
-10) In the seventh, run "python sub1 127.0.0.1".
-11) In the eight, run "python sub2 127.0.0.1".
-12) In the ninth, run "python sub3 127.0.0.1".
+10) In the seventh, run "python sub1.py".
+11) In the eight, run "python sub2.py".
+12) In the ninth, run "python sub3.py".
 
 NOTE: EACH SUBSCRIBER SHOULD HAVE DIFFERENT OUTPUT
 Expected Output, sub1 AFTER ALL 3 PUBLISHERS HAVE REGISTERED:  
@@ -152,11 +152,11 @@ topic 3: PUB3
 Test name: testBrokerTolerance
 Test description: Tests whether the pub-sub works after a broker dies
 1) Start up 5 terminals in the test's folder and run clean_up.py in one of them.
-2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds
-3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
-4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
-5) In the fourth, run "python sub 127.0.0.1"
-6) In the fifth, run "python pub 127.0.0.4 127.0.0.1"
+2) In the first, run "python eb.py" and wait a few seconds
+3) In the second, run "python eb.py" and wait a few seconds
+4) In the third, run "python eb.py" and wait a few seconds
+5) In the fourth, run "python sub.py"
+6) In the fifth, run "python pub.py 127.0.0.1"
 7) Kill whichever eb terminal is receiving updates
 
 Expected output(from sub):  

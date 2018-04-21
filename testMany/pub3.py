@@ -13,9 +13,8 @@ if __name__ == '__main__':
 		from ..publisher import Publisher
 
 	this_ip = sys.argv[1]
-	existing_broker_ip = sys.argv[2]
 
-	pub = Publisher(this_ip, existing_broker_ip)
+	pub = Publisher(this_ip)
 	pub.register("topic1", 2)
 	pub.register("topic2", 1)
 	pub.register("topic3", 3)

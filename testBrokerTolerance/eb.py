@@ -10,10 +10,5 @@ if __name__ == '__main__':
 	else:
 		from ..event_broker import EventBroker
 
-	this_broker_ip = sys.argv[1]
-	existing_broker_ip = None
-	if len(sys.argv) > 2:
-		existing_broker_ip = sys.argv[2]
-
-	eb = EventBroker(this_broker_ip, existing_broker_ip)
+	eb = EventBroker()
 	eb.start()
