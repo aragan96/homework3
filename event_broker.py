@@ -80,13 +80,13 @@ class EventBroker:
         self.zk = KazooClient(hosts='127.0.0.1:2181')
         self.zk.start()
         print "zookeeper started with state", self.zk.state
-        
+        self.zk.ensure_path("/MESSAGES")
         try:
             self.zk.create("/LEADER", b"0", ephemeral=True)
             print "BECAME LEADER INITIALLY"
             self.is_leader = True
         except:
-            @self.zk.ChildrenWatch("/LEADER")
+            @self.zk.ChildrenWatch("/MESSAGES")
             def watch_children(children):
                 print "CHILDREN", children
 
@@ -183,7 +183,7 @@ class EventBroker:
             if register_code == "registerpub":
                 # Forward register message to all other brokers
                 self.broker_pub_socket.send_string(received_string)
-                self.zk.create("/LEADER/TEST", received)
+                self.zk.create("/MESSAGES/TEST", received_string)
                 # Register a publisher
                 topic = msg["topic"]
                 sender_id = msg["pId"]
