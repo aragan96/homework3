@@ -75,6 +75,7 @@ class EventBroker:
         logging.basicConfig()
         # maps topic strings to topic class
         self.topic_map = {}
+        self.num_children = 0
 
         self.is_leader = False
         self.zk = KazooClient(hosts='127.0.0.1:2181')
@@ -89,6 +90,30 @@ class EventBroker:
             @self.zk.ChildrenWatch("/MESSAGES")
             def watch_children(children):
                 print "CHILDREN", children
+                # Receive messages and update state in background so that on failure can pick up where leader left off
+                while self.num_messages_processed < len(children):
+                    received_string = children[self.num_messages_processed]
+                    self.num_messages_processed += 1
+                    print "Received:", received_string
+                    register_code, mjson = received_string.split()
+                    msg = json.loads(mjson)
+                    if register_code == "registerpub":
+                        topic = msg["topic"]
+                        sender_id = msg["pId"]
+                        history = msg["history"]
+                        ownership_strength = msg["ownership_strength"]
+                        if topic in self.topic_map:
+                            self.topic_map[topic].add_publisher(sender_id, ownership_strength, history)
+                        else:
+                            self.topic_map[topic] = Topic(topic, sender_id, ownership_strength, history)
+                            broker_sub_socket.setsockopt_string(zmq.SUBSCRIBE, topic.decode("ascii"))
+                    else:
+                        topic = register_code
+                        sender_id = msg["pId"]
+                        message_contents = msg["val"]
+                        is_heartbeat = msg["heartbeat"]
+                        if topic in self.topic_map:
+                            self.topic_map[topic].receive_message(sender_id, message_contents, is_heartbeat)
 
             @self.zk.DataWatch("/LEADER")
             def watch_func(data, stat):
@@ -104,43 +129,9 @@ class EventBroker:
                     print "FAILED TO BECOME LEADER, OTHER NODE BEAT THIS ONE"
                     return True
 
-        if self.is_leader:
-            self.start()
-            return
-
-        # Receive messages and update state in background so that on failure can pick up where leader left off
-        broker_sub_socket = self.context.socket(zmq.SUB)
-        broker_sub_socket.connect("tcp://127.0.0.1:5557")
-        broker_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "registerpub".decode("ascii"))
-        broker_sub_socket.RCVTIMEO = 3000
+        
         while not self.is_leader:
-            try:
-                received_string = broker_sub_socket.recv()
-                print "Received:", received_string
-                register_code, mjson = received_string.split()
-                msg = json.loads(mjson)
-                if register_code == "registerpub":
-                    topic = msg["topic"]
-                    sender_id = msg["pId"]
-                    history = msg["history"]
-                    ownership_strength = msg["ownership_strength"]
-                    if topic in self.topic_map:
-                        self.topic_map[topic].add_publisher(sender_id, ownership_strength, history)
-                    else:
-                        self.topic_map[topic] = Topic(topic, sender_id, ownership_strength, history)
-                        broker_sub_socket.setsockopt_string(zmq.SUBSCRIBE, topic.decode("ascii"))
-                else:
-                    topic = register_code
-                    sender_id = msg["pId"]
-                    message_contents = msg["val"]
-                    is_heartbeat = msg["heartbeat"]
-                    if topic in self.topic_map:
-                        self.topic_map[topic].receive_message(sender_id, message_contents, is_heartbeat)
-            except zmq.error.Again:
-                if not self.is_leader:
-                    print "No messages received for 3 seconds"
-
-        broker_sub_socket.close()
+            time.sleep(1)
 
         self.start()
 
@@ -168,9 +159,6 @@ class EventBroker:
         self.xpub_socket = self.context.socket(zmq.PUB)
         self.xpub_socket.bind("tcp://127.0.0.1:5556")
 
-        self.broker_pub_socket = self.context.socket(zmq.PUB)
-        self.broker_pub_socket.bind("tcp://127.0.0.1:5557")
-
         self.xsub_socket.setsockopt_string(zmq.SUBSCRIBE, "registerpub".decode("ascii"))
         self.xsub_socket.setsockopt_string(zmq.SUBSCRIBE, "registersub".decode("ascii"))
         print "NEW LEADER"
@@ -182,8 +170,7 @@ class EventBroker:
             msg = json.loads(mjson)
             if register_code == "registerpub":
                 # Forward register message to all other brokers
-                self.broker_pub_socket.send_string(received_string)
-                self.zk.create("/MESSAGES/TEST", received_string)
+                self.zk.create("/MESSAGES/TEST" + str(len(zk.get_children("/MESSAGES"))), received_string)
                 # Register a publisher
                 topic = msg["topic"]
                 sender_id = msg["pId"]
