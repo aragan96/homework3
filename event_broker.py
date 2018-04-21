@@ -75,7 +75,7 @@ class EventBroker:
         logging.basicConfig()
         # maps topic strings to topic class
         self.topic_map = {}
-        self.num_children = 0
+        self.num_messages_processed = 0
 
         self.is_leader = False
         self.zk = KazooClient(hosts='127.0.0.1:2181')
@@ -90,9 +90,10 @@ class EventBroker:
             @self.zk.ChildrenWatch("/MESSAGES")
             def watch_children(children):
                 print "CHILDREN", children
+                print "TEST", self.zk.get("/MESSAGES/TEST")
                 # Receive messages and update state in background so that on failure can pick up where leader left off
                 while self.num_messages_processed < len(children):
-                    received_string = children[self.num_messages_processed]
+                    received_string = self.zk.get("/MESSAGES/"+children[self.num_messages_processed])[0]
                     self.num_messages_processed += 1
                     print "Received:", received_string
                     register_code, mjson = received_string.split()
@@ -106,7 +107,6 @@ class EventBroker:
                             self.topic_map[topic].add_publisher(sender_id, ownership_strength, history)
                         else:
                             self.topic_map[topic] = Topic(topic, sender_id, ownership_strength, history)
-                            broker_sub_socket.setsockopt_string(zmq.SUBSCRIBE, topic.decode("ascii"))
                     else:
                         topic = register_code
                         sender_id = msg["pId"]
@@ -161,6 +161,8 @@ class EventBroker:
 
         self.xsub_socket.setsockopt_string(zmq.SUBSCRIBE, "registerpub".decode("ascii"))
         self.xsub_socket.setsockopt_string(zmq.SUBSCRIBE, "registersub".decode("ascii"))
+        for topic in self.topic_map:
+            self.xsub_socket.setsockopt_string(zmq.SUBSCRIBE, topic.decode("ascii"))
         print "NEW LEADER"
         should_continue = True
         while should_continue:
@@ -170,7 +172,7 @@ class EventBroker:
             msg = json.loads(mjson)
             if register_code == "registerpub":
                 # Forward register message to all other brokers
-                self.zk.create("/MESSAGES/TEST" + str(len(zk.get_children("/MESSAGES"))), received_string)
+                self.zk.create("/MESSAGES/TEST" + str(len(self.zk.get_children("/MESSAGES"))), received_string)
                 # Register a publisher
                 topic = msg["topic"]
                 sender_id = msg["pId"]
@@ -196,7 +198,7 @@ class EventBroker:
                         i -= 1
             else:
                 # Forward register message to all other brokers
-                self.broker_pub_socket.send_string(received_string)
+                # TODO: Pass on message
                 topic = register_code
                 sender_id = msg["pId"]
                 message_contents = msg["val"]
