@@ -198,7 +198,7 @@ class EventBroker:
                         i -= 1
             else:
                 # Forward register message to all other brokers
-                # TODO: Pass on message
+                self.zk.create("/MESSAGES/TEST" + str(len(self.zk.get_children("/MESSAGES"))), received_string)
                 topic = register_code
                 sender_id = msg["pId"]
                 message_contents = msg["val"]
