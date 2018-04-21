@@ -90,7 +90,6 @@ class EventBroker:
             @self.zk.ChildrenWatch("/MESSAGES")
             def watch_children(children):
                 print "CHILDREN", children
-                print "TEST", self.zk.get("/MESSAGES/TEST")
                 # Receive messages and update state in background so that on failure can pick up where leader left off
                 while self.num_messages_processed < len(children):
                     received_string = self.zk.get("/MESSAGES/"+children[self.num_messages_processed])[0]
