@@ -1,6 +1,6 @@
 # homework3
 
-NOTE: A Zookeeper server must be running for this assignment to work.
+NOTE: A Zookeeper server must be running for this assignment to work. This may become cluttered and we recommend running clean_up.py before each test to ensure there is no overlap from one run to the next.
 
 Benchmarks when run on Ubuntu virtual machine:
 Average time to send/receive one message with:
@@ -17,7 +17,7 @@ Tests included:
 Test name: testFiltering
 Test description: Tests whether the subscriber only receives updates on topics they subscribed to.
 To run:
-1) Start up 5 terminals in the test's folder
+1) Start up 5 terminals in the test's folder and run clean_up.py in one of them.
 2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds
 3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
 4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
@@ -37,7 +37,7 @@ topic1: 8
 Test name: testHistory
 Test description: Tests whether system accurately maintains history of publishers.
 To run:
-1) Start up 5 terminals in the test's folder
+1) Start up 5 terminals in the test's folder and run clean_up.py in one of them.
 2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds
 3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
 4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
@@ -59,7 +59,7 @@ NOTE: messages may be out of order, that's ok.
 Test name: testOwnershipStrength
 Test description: Tests whether nodes with higher ownership strength are given priority and only their messages are received.
 To run:
-1) Start up 6 terminals in the test's folder
+1) Start up 6 terminals in the test's folder and run clean_up.py in one of them.
 2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds
 3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
 4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
@@ -85,7 +85,7 @@ posted approximately every 1 second.
 Test name: testFailingOwnership
 Test description: Tests whether nodes with lower priority take over if the leader dies.
 To run:
-1) Start up 6 terminals in the test's folder  
+1) Start up 6 terminals in the test's folder and run clean_up.py in one of them.
 2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds  
 3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
 4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
@@ -115,7 +115,7 @@ This should repeat.
 Test name: testMany
 Test description: Tests whether the system works with many publishers and subscribers operating with multiple topics at once.
 To run:
-1) Start up 9 terminals in the test's folder
+1) Start up 9 terminals in the test's folder and run clean_up.py in one of them.
 2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds
 3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
 4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
@@ -151,7 +151,7 @@ topic 3: PUB3
 
 Test name: testBrokerTolerance
 Test description: Tests whether the pub-sub works after a broker dies
-1) Start up 5 terminals in the test's folder
+1) Start up 5 terminals in the test's folder and run clean_up.py in one of them.
 2) In the first, run "python eb.py 127.0.0.1" and wait a few seconds
 3) In the second, run "python eb.py 127.0.0.2 127.0.0.1" and wait a few seconds
 4) In the third, run "python eb.py 12.0.0.3 127.0.0.1" and wait a few seconds
