@@ -86,6 +86,10 @@ class EventBroker:
             print "BECAME LEADER INITIALLY"
             self.is_leader = True
         except:
+            @self.zk.ChildrenWatch("/LEADER")
+            def watch_children(children):
+                print "CHILDREN", children
+
             @self.zk.DataWatch("/LEADER")
             def watch_func(data, stat):
                 if data is not None:
@@ -99,6 +103,7 @@ class EventBroker:
                 except:
                     print "FAILED TO BECOME LEADER, OTHER NODE BEAT THIS ONE"
                     return True
+
         if self.is_leader:
             self.start()
             return
@@ -178,6 +183,7 @@ class EventBroker:
             if register_code == "registerpub":
                 # Forward register message to all other brokers
                 self.broker_pub_socket.send_string(received_string)
+                self.zk.create("/LEADER/TEST", received)
                 # Register a publisher
                 topic = msg["topic"]
                 sender_id = msg["pId"]
